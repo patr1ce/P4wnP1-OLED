@@ -88,7 +88,8 @@ def activate_payload(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos):
  cmdout = subprocess.check_output(cmd, shell = True )
 
  # activate payload
- cmd = "sed -i -e '/#PAYLOAD=" + payloads[pos_in_payloads+menu_cursor_pos] + "/s/#PAYLOAD=/PAYLOAD=/' /home/pi/P4wnP1/setup.cfg"
+ payload_name = payloads[pos_in_payloads+menu_cursor_pos].replace('/','\/')	
+ cmd = "sed -i -e '/#PAYLOAD=" + payload_name + "/s/#PAYLOAD=/PAYLOAD=/' /home/pi/P4wnP1/setup.cfg"
  cmdout = subprocess.check_output(cmd, shell = True )
 
  system_shutdown(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
@@ -97,7 +98,10 @@ def change_lang(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos):
  # Change lang
  cmd = "find /home/pi/P4wnP1/payloads/ -type f -name "*.txt" -exec sed -i 's/lang=\"[a-z]{2}\"/lang=\""+langs[pos_in_payloads+menu_cursor_pos]+"\"/g' {} +"
  cmdout = subprocess.check_output(cmd, shell = True )
- 
+ cmd = "find /home/pi/P4wnP1/payloads/ -type f -name "*.txt" -exec sed -i 's/KEYBOARD_LANG=[a-z]{2}/KEYBOARD_LANG="+langs[pos_in_payloads+menu_cursor_pos]+"/g' {} +"
+ cmdout = subprocess.check_output(cmd, shell = True )
+
+	
  menu_number = 1
  draw_menu(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
  
@@ -187,8 +191,11 @@ def buttons(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos):
    if not GPIO.input(C_pin):
     if menu_number == 2:
 	change_lang(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
-    else:	
+    elif menu_number == 1:	
 	select_payload(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
+    else:
+	menu_number=2
+	draw_menu(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
     
    if not GPIO.input(L_pin):
     menu_number = (menu_number-1)%3:
