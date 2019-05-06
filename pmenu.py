@@ -56,7 +56,7 @@ def hide_menu():
  disp.image(image)
  disp.display()
 
-def system_shutdown(max_row,payloads,pos_in_payloads,menu_cursor_pos):
+def system_shutdown(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos):
  draw.rectangle((0,0,width,height), outline=0, fill=0)
  draw.text((x, top), "Shutdown P4wnP1",font=font, fill=255)
  draw.text((x, top+24), "to activate payload?",font=font, fill=255)
@@ -75,14 +75,14 @@ def system_shutdown(max_row,payloads,pos_in_payloads,menu_cursor_pos):
     cmdout = subprocess.check_output(cmd, shell = True )
 
    if not GPIO.input(B_pin):
-    draw_menu(max_row,payloads,pos_in_payloads,menu_cursor_pos)
+    draw_menu(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
 
   time.sleep(.18)
 
  except KeyboardInterrupt:
   GPIO.cleanup() 
 
-def activate_payload(max_row,payloads,pos_in_payloads,menu_cursor_pos):
+def activate_payload(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos):
  # comment out active payload
  cmd = "sed -i -e '/^PAYLOAD=/s/^PAYLOAD=/#PAYLOAD=/' /home/pi/P4wnP1/setup.cfg"
  cmdout = subprocess.check_output(cmd, shell = True )
@@ -91,9 +91,17 @@ def activate_payload(max_row,payloads,pos_in_payloads,menu_cursor_pos):
  cmd = "sed -i -e '/#PAYLOAD=" + payloads[pos_in_payloads+menu_cursor_pos] + "/s/#PAYLOAD=/PAYLOAD=/' /home/pi/P4wnP1/setup.cfg"
  cmdout = subprocess.check_output(cmd, shell = True )
 
- system_shutdown(max_row,payloads,pos_in_payloads,menu_cursor_pos)
+ system_shutdown(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
+
+def change_lang(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos):
+ # Change lang
+ cmd = "find /home/pi/P4wnP1/payloads/ -type f -name "*.txt" -exec sed -i 's/lang=\"[a-z]{2}\"/lang=\""+langs[pos_in_payloads+menu_cursor_pos]+"\"/g' {} +"
+ cmdout = subprocess.check_output(cmd, shell = True )
  
-def select_payload(max_row,payloads,pos_in_payloads,menu_cursor_pos):
+ menu_number = 1
+ draw_menu(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
+ 
+def select_payload(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos):
  draw.rectangle((0,0,width,height), outline=0, fill=0)
  draw.text((x, top), "Activate Payload ?",font=font, fill=255)
  draw.text((x, top+24), payloads[pos_in_payloads+menu_cursor_pos],font=font, fill=255)
@@ -104,39 +112,54 @@ def select_payload(max_row,payloads,pos_in_payloads,menu_cursor_pos):
  try:
   while 1:
    if not GPIO.input(A_pin):
-    activate_payload(max_row,payloads,pos_in_payloads,menu_cursor_pos)
+    activate_payload(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
    
    if not GPIO.input(B_pin):
-    draw_menu(max_row,payloads,pos_in_payloads,menu_cursor_pos)
+    draw_menu(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
 
   time.sleep(.18)
 
  except KeyboardInterrupt:
   GPIO.cleanup()
 
-def draw_menu(max_row,payloads,pos_in_payloads,menu_cursor_pos,hidden_menu=0):
+def draw_menu(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos):
  draw.rectangle((0,0,width,height), outline=0, fill=0)
  draw.text((x, top), "Select Payload",font=font, fill=255)
  z = 0
- for i in payloads:
-  if z > max_row - 1: # end of screen 
-   break
-  if z + pos_in_payloads > len(payloads)-1: # end of payload list
-   break
-  if z == menu_cursor_pos:
-   draw.text((x, top+12+(z*8)), ">" + payloads[z+pos_in_payloads],font=font, fill=255)
+ 
+ if currentmenu == 1:
+ 	for i in payloads:
+	  if z > max_row - 1: # end of screen 
+	   break
+	  if z + pos_in_payloads > len(payloads)-1: # end of payload list
+	   break
+	  if z == menu_cursor_pos:
+	   draw.text((x, top+12+(z*8)), ">" + payloads[z+pos_in_payloads],font=font, fill=255)
+	  else:
+	   draw.text((x, top+12+(z*8)), " " + payloads[z+pos_in_payloads],font=font, fill=255)
+	  z += 1
+	disp.image(image)
+  	disp.display()
+  elif currentmenu == 2:
+	for i in langs:
+	  if z > max_row - 1: # end of screen 
+	   break
+	  if z + pos_in_payloads > len(langs)-1: # end of payload list
+	   break
+	  if z == menu_cursor_pos:
+	   draw.text((x, top+12+(z*8)), ">" + langs[z+pos_in_payloads],font=font, fill=255)
+	  else:
+	   draw.text((x, top+12+(z*8)), " " + langs[z+pos_in_payloads],font=font, fill=255)
+	  z += 1
+	disp.image(image)
+  	disp.display()
   else:
-   draw.text((x, top+12+(z*8)), " " + payloads[z+pos_in_payloads],font=font, fill=255)
-  z += 1
- if hidden_menu > 0:
-  hide_menu()
- else:
-  disp.image(image)
-  disp.display()
- buttons(max_row,payloads,pos_in_payloads,menu_cursor_pos)
+	current_menu = 0
+	hide_menu()
+ buttons(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
 
 # up = menu up, down = menu down, center = select, left = hide menu, right = unhide menu
-def buttons(max_row,payloads,pos_in_payloads,menu_cursor_pos):
+def buttons(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos):
  try:
   while 1:
    if not GPIO.input(U_pin):
@@ -149,7 +172,7 @@ def buttons(max_row,payloads,pos_in_payloads,menu_cursor_pos):
      else: # we are on top on page 1
       menu_cursor_pos = 0
  
-    draw_menu(max_row,payloads,pos_in_payloads,menu_cursor_pos)
+    draw_menu(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
 
    if not GPIO.input(D_pin):
     if pos_in_payloads + menu_cursor_pos != len(payloads)-1: # check if we are at the end of payloads
@@ -159,16 +182,22 @@ def buttons(max_row,payloads,pos_in_payloads,menu_cursor_pos):
      pos_in_payloads += max_row
      menu_cursor_pos = 0
 
-    draw_menu(max_row,payloads,pos_in_payloads,menu_cursor_pos)
+    draw_menu(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
 
    if not GPIO.input(C_pin):
-    select_payload(max_row,payloads,pos_in_payloads,menu_cursor_pos)
+    if menu_number == 2:
+	change_lang(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
+    else:	
+	select_payload(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
     
    if not GPIO.input(L_pin):
-    hide_menu()
+    menu_number = (menu_number-1)%3:
+    draw_menu(max_row,payloads,langs,0,0)
+	
 	
    if not GPIO.input(R_pin):
-    draw_menu(max_row,payloads,pos_in_payloads,menu_cursor_pos)
+    menu_number = (menu_number+1)%3:
+    draw_menu(max_row,payloads,langs,0,0)
 
    time.sleep(.18)
 
@@ -180,8 +209,10 @@ if __name__ == '__main__':
  cmd = "cat /home/pi/P4wnP1/setup.cfg | grep 'PAYLOAD' |  grep -o '^[^#]*#\?[^#]*' | awk -F '=' '{print $2}' | awk -F '.' '{print $1}'"
  cmdout = subprocess.check_output(cmd, shell = True )
  payloads = cmdout.splitlines()
+ langs = ["fr", "gb", "us", "be", "de", "es", "it", "pt", "br", "ca", "ch", "ru", "dk", "fi", "hr", "no", "si", "sv", "tr"]
  max_row = 6
  menu_cursor_pos = 0
  pos_in_payloads = 0
- 
- draw_menu(max_row,payloads,pos_in_payloads,menu_cursor_pos,1)
+ menu_number = 0
+
+ buttons(max_row,payloads,langs,pos_in_payloads,menu_cursor_pos)
